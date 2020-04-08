@@ -1,4 +1,7 @@
+mod job;
+mod orbit;
 mod rocket;
+mod sats;
 
 mod units {
     pub struct Mass(u64); //kg
