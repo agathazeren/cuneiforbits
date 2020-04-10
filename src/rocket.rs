@@ -1,4 +1,5 @@
 use crate::units::*;
+use std::fmt;
 
 type Crewed = bool;
 
@@ -39,4 +40,13 @@ struct Component {
 
 struct Rocket {
     components: Vec<Component>,
+}
+
+impl fmt::Display for Rocket {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for component in &self.components {
+            write!(f, "{}", component.display)?
+        }
+        Ok(())
+    }
 }
