@@ -59,6 +59,7 @@ pub struct Game {
     customers: CustomerRegistry,
     rocket_designs: Mutex<Vec<Rocket>>,
     available_jobs: Mutex<Vec<Job>>,
+    accepted_jobs: Mutex<Vec<Job>>,
 }
 
 const TARGET_JOBS: usize = 3;
@@ -70,6 +71,7 @@ impl Game {
             customers: CustomerRegistry::new(),
             rocket_designs: Mutex::new(Vec::new()),
             available_jobs: Mutex::new(Vec::new()),
+            accepted_jobs: Mutex::new(Vec::new()),
         }
     }
 
@@ -82,11 +84,16 @@ impl Game {
     }
 
     fn accept_job_at(&self, idx: usize) {
-        unimplemented!();
+        let mut available = self.available_jobs.lock().unwrap();
+        let job = available.remove(idx);
+        drop(available);
+        let mut accepted = self.accepted_jobs.lock().unwrap();
+        accepted.push(job);
     }
 
     fn decline_job_at(&self, idx: usize) {
-        unimplemented!();
+        let _ = self.available_jobs.lock().unwrap().remove(idx);
+        
     }
 }
 

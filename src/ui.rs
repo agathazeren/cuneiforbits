@@ -5,6 +5,8 @@ use termion::cursor;
 use termion::event::Event;
 use termion::event::Key;
 
+
+
 pub struct UI {
     current_view: Box<dyn FullView>,
     view_stack: Vec<Box<dyn FullView>>,
@@ -276,10 +278,13 @@ mod jobs_view {
     use std::io::stdout;
     use std::io::Write;
     use termion::{clear, cursor};
+    use std::cell::Cell;
+
 
     pub struct View {
         vert_sel: u8,
         horiz_sel: HorizSel,
+        no_jobs: Cell<bool>,
     }
 
     enum HorizSel {
@@ -310,21 +315,24 @@ mod jobs_view {
                     cursor::Right(3)
                 );
             }
+            self.no_jobs.set(jobs.len() == 0);
             drop(jobs);
-            let x: u16 = match self.horiz_sel {
-                Name => 1,
-                Accept => 3 + MAX_CUSTOMER_NAME_LEN + 1,
-                Decline => 3 + MAX_CUSTOMER_NAME_LEN + 5,
-            };
-            let symbol = match self.horiz_sel {
-                Name => "▶".to_string(),
-                Accept | Decline => format!("[{}]", cursor::Right(1)),
-            };
-            print!(
-                "{}{}",
-                cursor::Goto(x, (3 + self.vert_sel * 2).into()),
-                symbol
-            );
+            if !self.no_jobs.get(){
+                let x: u16 = match self.horiz_sel {
+                    Name => 1,
+                    Accept => 3 + MAX_CUSTOMER_NAME_LEN + 1,
+                    Decline => 3 + MAX_CUSTOMER_NAME_LEN + 5,
+                };
+                let symbol = match self.horiz_sel {
+                    Name => "▶".to_string(),
+                    Accept | Decline => format!("[{}]", cursor::Right(1)),
+                };
+                print!(
+                    "{}{}",
+                    cursor::Goto(x, (3 + self.vert_sel * 2).into()),
+                    symbol
+                );
+            }
             stdout().flush().unwrap();
         }
 
@@ -332,28 +340,24 @@ mod jobs_view {
             match input {
                 Input::Back => Some(Transition::Pop),
                 Input::Up => {
-                    if self.vert_sel == 0 {
-                        self.vert_sel =
-                            u8::try_from(GAME.available_jobs.lock().unwrap().len()).unwrap() - 1;
-                    } else {
-                        self.vert_sel -= 1;
+                    if !self.no_jobs.get(){
+                        if self.vert_sel == 0 {
+                            self.vert_sel = u8::try_from(GAME.available_jobs.lock().unwrap().len()).unwrap() - 1;
+                        } else {
+                            self.vert_sel -= 1;
+                        }
                     }
                     self.full_redraw();
                     None
                 }
                 Input::Down => {
-                    if self.vert_sel + 1
-                        == GAME
-                            .available_jobs
-                            .lock()
-                            .unwrap()
-                            .len()
-                            .try_into()
-                            .unwrap()
-                    {
-                        self.vert_sel = 0;
-                    } else {
-                        self.vert_sel += 1;
+                    if !self.no_jobs.get(){
+                        let max_idx = u8::try_from(GAME.available_jobs.lock().unwrap().len()).unwrap() - 1;
+                        if self.vert_sel == max_idx {
+                            self.vert_sel = 0;
+                        } else {
+                            self.vert_sel += 1;
+                        }
                     };
                     self.full_redraw();
                     None
@@ -379,10 +383,16 @@ mod jobs_view {
                         Name => {}
                         Accept => {
                             GAME.accept_job_at(self.vert_sel.try_into().unwrap());
+                            if self.vert_sel >= u8::try_from(GAME.available_jobs.lock().unwrap().len()).unwrap() && self.vert_sel > 0{
+                                self.vert_sel -= 1;
+                            }
                             self.full_redraw();
                         }
                         Decline => {
                             GAME.decline_job_at(self.vert_sel.try_into().unwrap());
+                            if self.vert_sel >= u8::try_from(GAME.available_jobs.lock().unwrap().len()).unwrap() && self.vert_sel > 0{
+                                self.vert_sel -= 1;
+                            }
                             self.full_redraw();
                         }
                     }
@@ -397,6 +407,7 @@ mod jobs_view {
             View {
                 vert_sel: 0,
                 horiz_sel: Name,
+                no_jobs: Cell::new(GAME.available_jobs.lock().unwrap().len() == 0),
             }
         }
     }
