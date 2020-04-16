@@ -382,14 +382,18 @@ mod jobs_view {
                     match self.horiz_sel {
                         Name => {}
                         Accept => {
-                            GAME.accept_job_at(self.vert_sel.try_into().unwrap());
+                            if !self.no_jobs.get() {
+                                GAME.accept_job_at(self.vert_sel.try_into().unwrap())
+                            }
                             if self.vert_sel >= u8::try_from(GAME.available_jobs.lock().unwrap().len()).unwrap() && self.vert_sel > 0{
                                 self.vert_sel -= 1;
                             }
                             self.full_redraw();
                         }
                         Decline => {
-                            GAME.decline_job_at(self.vert_sel.try_into().unwrap());
+                            if !self.no_jobs.get() {
+                                GAME.decline_job_at(self.vert_sel.try_into().unwrap())
+                            }
                             if self.vert_sel >= u8::try_from(GAME.available_jobs.lock().unwrap().len()).unwrap() && self.vert_sel > 0{
                                 self.vert_sel -= 1;
                             }
