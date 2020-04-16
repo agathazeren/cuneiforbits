@@ -59,12 +59,14 @@ impl UI{
                     self.current_view.full_redraw();
                 },
                 Some(Transition::Pop) => {
-                    if let Some(next_view) = self.view_stack.pop(){
-                        self.current_view = next_view;
+                    if let Some(mut v) = self.view_stack.pop(){
+                        mem::swap(&mut v, &mut self.current_view);
+                        self.current_view.restart(v);
+                        self.current_view.full_redraw();
                     } else {
                         return false;
                     }
-                    self.current_view.full_redraw();
+                    
                 },
                 None => {}
             }
