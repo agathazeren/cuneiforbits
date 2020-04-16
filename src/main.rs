@@ -38,8 +38,7 @@ fn main() {
             break
         }
     }
-
-    print!("{}{}{}",termion::clear::All,termion::cursor::Goto(1,1),termion::cursor::SteadyBlock);
+    print!("{}{}{}",termion::clear::All,termion::cursor::Goto(1,1),termion::cursor::Show);
     raw.flush();
 
     drop(raw);
