@@ -1,6 +1,8 @@
 use termion::event::Event;
 use termion::event::Key;
 use std::io::Write;
+use termion::cursor;
+use std::mem;
 
 
 pub struct UI{
@@ -43,14 +45,16 @@ impl UI{
     }
 
     pub fn start(&mut self){
+        print!("{}",cursor::Hide);
         self.current_view.full_redraw();
+        
     }
 
     pub fn input(&mut self,event:Event)->Continue{
         if let Some(input) = self.input_mode.map(event){
             match self.current_view.update(input){
                 Some(Transition::Push(mut v)) => {
-                    std::mem::swap(&mut v,&mut self.current_view);
+                    mem::swap(&mut v,&mut self.current_view);
                     self.view_stack.push(v);
                     self.current_view.full_redraw();
                 },
@@ -172,6 +176,8 @@ mod basic_tl_view{
                 selection:0,
                 tabs:vec![
                     Tab{name:"Missions",transition:Some(Transition::Push(Box::new(super::unimplemented_view::View::new())))},
+                    Tab{name:"Jobs",transition:Some(Transition::Push(Box::new(super::unimplemented_view::View::new())))},
+                    Tab{name:"Rockets",transition:Some(Transition::Push(Box::new(super::unimplemented_view::View::new())))},
                     Tab{name:"Exit",transition:Some(Transition::Pop)},
                 ],
             }
@@ -193,7 +199,8 @@ mod unimplemented_view{
 
     impl FullView for View{
         fn full_redraw(&self){
-            print!("{}{}Unimplemended View. :(",clear::All,cursor::Goto(1,1));
+            print!("{}{}Unimplemended View. 𒀿|",clear::All,cursor::Goto(1,1));
+            eprint!("STDERR");
             stdout().flush();
         }
 
@@ -214,4 +221,3 @@ mod unimplemented_view{
 
         
 
-    

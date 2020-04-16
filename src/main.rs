@@ -39,7 +39,7 @@ fn main() {
         }
     }
 
-    print!("{}{}",termion::clear::All,termion::cursor::Goto(1,1));
+    print!("{}{}{}",termion::clear::All,termion::cursor::Goto(1,1),termion::cursor::SteadyBlock);
     raw.flush();
 
     drop(raw);
