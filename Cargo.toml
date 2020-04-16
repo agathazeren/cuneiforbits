@@ -9,3 +9,5 @@ edition = "2018"
 [dependencies]
 rand = "0.7"
 termion = "1.5.5"
+lazy_static = "1.4"
+static_assertions = "1.1"

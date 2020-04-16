@@ -1,10 +1,17 @@
-use crate::sats::{CubeSat, LargeSat, SatArray, SatId};
+use crate::orbit::Orbit;
+use crate::sats::{CubeSat, CubeSatClass, LargeSat, SatArray, SatId};
 use crate::units::*;
+use crate::GAME;
 use rand::{seq::SliceRandom, thread_rng, Rng};
+use std::fmt;
+use std::fmt::Display;
+use std::sync::atomic::AtomicU8;
+use std::sync::atomic::Ordering;
+use std::sync::Mutex;
 
 pub struct Job {
-    customer: CustomerId,
-    payload: Payload,
+    pub customer: CustomerId,
+    pub payload: Payload,
 }
 
 pub enum Payload {
@@ -19,34 +26,55 @@ pub struct Cargo {
     mass: Mass,
 }
 
+#[derive(Clone, Copy)]
 pub struct CustomerId(u32);
 
 pub struct CustomerRegistry {
-    customers: Vec<Customer>,
-    target_customers: u8,
+    customers: Mutex<Vec<Customer>>,
+    target_customers: AtomicU8,
 }
 
 pub struct Customer {
-    name: String,
+    pub name: String,
 }
 
 impl Job {
-    fn generate(&mut self, customers: &mut CustomerRegistry) -> Job {
+    pub fn generate() -> Job {
         Job {
-            customer: customers.get_or_generate(),
+            customer: GAME.customers.get_or_generate(),
             payload: Payload::generate(),
         }
     }
 }
 
+const TARGET_CUSTOMERS: u8 = 5;
+
 impl CustomerRegistry {
-    fn get_or_generate(&mut self) -> CustomerId {
-        let idx = thread_rng().gen_range(0, self.target_customers);
-        if usize::from(idx) >= self.customers.len() {
-            self.customers.push(Customer::generate());
-            return CustomerId((self.customers.len() - 1) as u32);
+    pub fn new() -> CustomerRegistry {
+        CustomerRegistry {
+            customers: Mutex::new(Vec::new()),
+            target_customers: AtomicU8::new(TARGET_CUSTOMERS),
         }
+    }
+
+    fn get_or_generate(&self) -> CustomerId {
+        let idx = thread_rng().gen_range(0, self.target_customers.load(Ordering::Relaxed));
+        let mut customers = self.customers.lock().unwrap();
+        if idx as usize >= customers.len() {
+            customers.push(Customer::generate());
+            return CustomerId((customers.len() - 1) as u32);
+        }
+        drop(customers);
         CustomerId(idx as u32)
+    }
+
+    pub fn on<T, F: FnOnce(&Customer) -> T>(&self, CustomerId(idx): CustomerId, f: F) -> Option<T> {
+        let customers = self.customers.lock().unwrap();
+        if let Some(customer) = customers.get(idx as usize) {
+            Some(f(customer))
+        } else {
+            None
+        }
     }
 }
 
@@ -75,6 +103,24 @@ impl Customer {
 
 impl Payload {
     fn generate() -> Payload {
-        unimplemented!()
+        //temp for testing
+        Payload::CubeSat(CubeSat {
+            class: CubeSatClass::CubeSat1U,
+            mass: Mass::kg(1),
+            orbit: Orbit,
+        })
+    }
+}
+
+impl Display for Payload {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::CubeSat(sat) => write!(f, "CubeSat"),
+            Self::LargeSat(sat) => write!(f, "Large Sat"),
+            Self::SatArray(sat) => write!(f, "Sat Array"),
+            Self::Station(sat, cargo) => write!(f, "Delivery"),
+        }
+        .unwrap();
+        Ok(())
     }
 }
