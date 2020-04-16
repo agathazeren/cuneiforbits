@@ -2,31 +2,31 @@ use crate::sats::{CubeSat, LargeSat, SatArray, SatId};
 use crate::units::*;
 use rand::{seq::SliceRandom, thread_rng, Rng};
 
-struct Job {
+pub struct Job {
     customer: CustomerId,
     payload: Payload,
 }
 
-enum Payload {
+pub enum Payload {
     CubeSat(CubeSat),
     LargeSat(LargeSat),
     SatArray(SatArray),
     Station(SatId, Cargo),
 }
 
-struct Cargo {
+pub struct Cargo {
     volume: Volume,
     mass: Mass,
 }
 
-struct CustomerId(u32);
+pub struct CustomerId(u32);
 
-struct CustomerRegistry {
+pub struct CustomerRegistry {
     customers: Vec<Customer>,
     target_customers: u8,
 }
 
-struct Customer {
+pub struct Customer {
     name: String,
 }
 

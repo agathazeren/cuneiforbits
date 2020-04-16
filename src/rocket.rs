@@ -1,35 +1,35 @@
 use crate::units::*;
 use std::fmt;
 
-type Crewed = bool;
+pub type Crewed = bool;
 
-enum PropellantType {
+pub enum PropellantType {
     Hyrdolox,
     Methalox,
     Keralox,
     Hypergolic,
 }
 
-enum Fuel {
+pub enum Fuel {
     Hydrogen,
     Methane,
     RP1,
 }
 
-enum CryoClass {
+pub enum CryoClass {
     STP,
     Cryo,
     SuperCryo,
 }
 
-enum ComponentClass {
+pub enum ComponentClass {
     Engine(PropellantType, Isp),
     Tank(CryoClass, Preasure),
     Fairing(Volume),
     Capsule(Crewed, Volume, Volume),
 }
 
-struct Component {
+pub struct Component {
     name: String,
     display: String,
     mass: Mass,
@@ -38,7 +38,7 @@ struct Component {
     attatch_down: bool,
 }
 
-struct Rocket {
+pub struct Rocket {
     components: Vec<Component>,
 }
 
