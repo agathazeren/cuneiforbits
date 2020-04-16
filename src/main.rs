@@ -39,9 +39,10 @@ fn main() {
         }
     }
 
-    drop(raw);
-    println!(""); // so that the program ends with a newline. 
+    print!("{}{}",termion::clear::All,termion::cursor::Goto(1,1));
+    raw.flush();
 
+    drop(raw);
 }
 
 
