@@ -20,10 +20,11 @@ pub trait FullView {
     fn full_redraw(&self);
     fn update(&mut self, input: Input) -> Option<Transition>;
     #[allow(unused_variables)]
-    fn restart(&mut self, last: Box<dyn FullView>) {
+    fn restart(&mut self, last: Box<dyn FullView>) -> Option<Transition> {
         self.full_redraw();
+        None
     }
-    fn start(&self) -> Option<Transition> {
+    fn start(&mut self) -> Option<Transition> {
         self.full_redraw();
         None
     }
@@ -75,7 +76,8 @@ impl UI {
             Some(Transition::Push(mut v)) => {
                 mem::swap(&mut v, &mut self.current_view);
                 self.view_stack.push(v);
-                if !self.handle_trans(self.current_view.start()) {
+                let start_trans = self.current_view.start();
+                if !self.handle_trans(start_trans) {
                     return false;
                 }
             }
@@ -199,9 +201,10 @@ mod basic_tl_view {
             }
         }
 
-        fn restart(&mut self, last: Box<dyn FullView>) {
+        fn restart(&mut self, last: Box<dyn FullView>) -> Option<Transition>{
             self.tabs[usize::from(self.selection)].transition = Some(Transition::Push(last));
             self.full_redraw();
+            None
         }
     }
 
@@ -224,7 +227,7 @@ mod basic_tl_view {
                     Tab {
                         name: "Rockets",
                         transition: Some(Transition::Push(Box::new(
-                            super::unimplemented_view::View::new(),
+                            super::rockets_view::View::new()
                         ))),
                     },
                     Tab {
@@ -436,10 +439,10 @@ mod tick_view {
             print!("{}", clear::All);
             stdout().flush().unwrap();
         }
-        fn update(&mut self, input: Input) -> Option<Transition> {
-            None
+        fn update(&mut self, _: Input) -> Option<Transition> {
+            unreachable!()
         }
-        fn start(&self) -> Option<Transition> {
+        fn start(&mut self) -> Option<Transition> {
             GAME.tick();
             Some(Transition::Pop)
         }
@@ -451,3 +454,139 @@ mod tick_view {
         }
     }
 }
+
+mod rockets_view{
+    use super::view_prelude::*;
+    #[macro_use] use crate::ui_print;
+    use termion::{clear,cursor};
+    use std::io::stdout;
+    use std::io::Write;
+
+    pub struct View{
+        sel:Sel,
+    }
+
+    enum Sel{
+        New,
+        Rocket(u8),
+        RocketEdit(u8),
+    }
+
+    impl FullView for View{
+        fn full_redraw(&self){
+            print!("{}{}",clear::All,cursor::Goto(1,1));
+
+            print!("Rockets  (+)");
+
+            let rockets = GAME.rocket_designs.lock().unwrap();
+            
+            for (idx,rocket) in rockets.iter().enumerate(){
+                print!("{}",cursor::Goto(2,(2 + 2*idx) as u16));
+                ui_print!("{}: {}",rocket.name,rocket);
+            }
+
+            drop(rockets);
+
+            const EDIT_BUTTON_X:u16 = 40;
+
+            match self.sel{
+                Sel::New => print!("{}{{{}}}",cursor::Goto(10,1),cursor::Right(1)),
+                Sel::Rocket(idx) => print!("{}>{}(edit)",cursor::Goto(1,(2+2*idx) as u16),cursor::Right(EDIT_BUTTON_X-1)),
+                Sel::RocketEdit(idx) => print!("{}[edit]",cursor::Goto(EDIT_BUTTON_X,(2+2*idx) as u16)),
+            }
+
+            stdout().flush().unwrap();
+        }
+
+        fn update(&mut self,input:Input)->Option<Transition>{
+            match input{
+                Input::Back => Some(Transition::Pop),
+                Input::Up => {
+                    let rocket_cnt = (GAME.rocket_designs.lock().unwrap().len()) as u8;
+                    if rocket_cnt == 0 {
+                        self.sel = Sel::New;
+                        return None;
+                    }
+                    let max_idx = rocket_cnt - 1;
+                    match self.sel{
+                        Sel::New => self.sel = Sel::Rocket(max_idx),
+                        Sel::Rocket(idx) | Sel::RocketEdit(idx) => self.sel = if idx == 0 {Sel::New} else {Sel::Rocket(idx - 1)},
+                    }
+                    self.full_redraw();
+                    None
+                },
+                Input::Down => {
+                    let rocket_cnt = (GAME.rocket_designs.lock().unwrap().len()) as u8;
+                    if rocket_cnt == 0 {
+                        self.sel = Sel::New;
+                        return None;
+                    }
+                    let max_idx = rocket_cnt - 1;
+                    match self.sel{
+                        Sel::New => self.sel = Sel::Rocket(0),
+                        Sel::Rocket(idx) | Sel::RocketEdit(idx) => self.sel = if idx == max_idx {Sel::New} else {Sel::Rocket(idx + 1)},
+                    }
+                    self.full_redraw();
+                    None
+                },
+                Input::Left | Input::Right => {
+                    self.sel = match self.sel{
+                        Sel::New => Sel::New,
+                        Sel::Rocket(idx) => Sel::RocketEdit(idx),
+                        Sel::RocketEdit(idx) => Sel::Rocket(idx),
+                    };
+                    self.full_redraw();
+                    None
+                },
+                Input::Select => {
+                    match self.sel{
+                        Sel::New => Some(Transition::Push(Box::new(super::unimplemented_view::View::new()))),
+                        Sel::RocketEdit(idx) => Some(Transition::Push(Box::new(super::unimplemented_view::View::new()))),
+                        Sel::Rocket(_) => None,
+                    }
+                },
+            }
+        }
+
+        fn start(&mut self)->Option<Transition>{
+            self.check_idx();
+            self.full_redraw();
+            None
+        }
+
+        fn restart(&mut self, _: Box<dyn FullView>)->Option<Transition>{
+            self.check_idx();
+            self.full_redraw();
+            None
+        }
+
+    }
+
+
+    impl View{
+        pub fn new()->View{
+            View{
+                sel:Sel::Rocket(0)
+            }
+        }
+
+        fn check_idx(&mut self){
+            let rocket_cnt = GAME.rocket_designs.lock().unwrap().len() as u8;
+            if rocket_cnt == 0 {
+                self.sel = Sel::New;
+                return
+            }
+            let max_idx = rocket_cnt - 1;
+            match self.sel{
+                Sel::Rocket(idx) => if idx > max_idx {
+                    self.sel = Sel::Rocket(idx - 1)
+                },
+                Sel::RocketEdit(idx) => if idx > max_idx {
+                    self.sel = Sel::RocketEdit(idx - 1)
+                },
+                Sel::New => {},
+            }
+        }
+    }
+}
+                

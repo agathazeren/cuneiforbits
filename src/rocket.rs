@@ -39,6 +39,7 @@ pub struct Component {
 }
 
 pub struct Rocket {
+    pub name:String,
     components: Vec<Component>,
 }
 
