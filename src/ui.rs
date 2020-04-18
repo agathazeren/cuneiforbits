@@ -540,8 +540,8 @@ mod rockets_view{
                 },
                 Input::Select => {
                     match self.sel{
-                        Sel::New => Some(Transition::Push(Box::new(super::unimplemented_view::View::new()))),
-                        Sel::RocketEdit(idx) => Some(Transition::Push(Box::new(super::unimplemented_view::View::new()))),
+                        Sel::New => Some(Transition::Push(Box::new(super::rocket_builder_view::View::new_rocket()))),
+                        Sel::RocketEdit(idx) => Some(Transition::Push(Box::new(super::rocket_builder_view::View::edit_rocket(idx)))),
                         Sel::Rocket(_) => None,
                     }
                 },
@@ -590,3 +590,210 @@ mod rockets_view{
     }
 }
                 
+mod rocket_builder_view{
+    use super::view_prelude::*;
+    #[macro_use] use crate::ui_print;
+    use crate::rocket::Rocket;
+    use crate::rocket::Component;
+    use termion::{clear,cursor};
+    use std::io::stdout;
+    use std::io::Write;
+
+
+    
+    pub struct View{
+        edited:Edited,
+        rocket:Rocket,
+        sel:Sel,
+    }
+
+    enum Sel{
+        RocketComponent(u8),
+        NewComponent(u8),
+        Save,
+    }
+    
+    enum Edited{
+        New,Edit(u8),
+    }
+
+    impl FullView for View{
+        fn full_redraw(&self){
+            print!("{}{}",clear::All,cursor::Goto(1,1));
+
+            print!("{}",self.rocket.name);
+
+            const SAVE_BUTTON_X: u16 = 30;
+
+            print!("{} save",cursor::Goto(SAVE_BUTTON_X,1));
+            
+            print!("{}",cursor::Goto(2,4));
+
+            const COMPONENT_WIDTH: u16 = Component::MAX_WIDTH + 1; //TODO: get rid of this
+
+            for component in &self.rocket.components{
+                let symbol = format!("{}",component);
+                print!("{}{}",symbol,cursor::Right(COMPONENT_WIDTH - symbol.len() as u16)); //this one really should be print, not ui_print
+            }
+
+            print!("{}Components:",cursor::Goto(1,6));
+            let components = GAME.known_components.lock().unwrap();
+
+            for (idx,component) in components.iter().enumerate(){
+                ui_print!("{}{}{}{} ({}){}Mass: {} kg",
+                          cursor::Goto(3,(7+idx*2) as u16),
+                          component,
+                          cursor::Goto(3+Component::MAX_WIDTH,(7+idx*2) as u16),
+                          component.name,
+                          component.class.symbol(),
+                          cursor::Goto(6+Component::MAX_WIDTH,(8+idx*2) as u16),
+                          component.mass.as_kg(),
+                );
+            }
+
+            match self.sel{
+                Sel::RocketComponent(idx) => {
+                    print!("{}^",cursor::Goto(1 + (COMPONENT_WIDTH)*(idx as u16) + Component::MAX_WIDTH / 2,5));
+                },
+                Sel::NewComponent(idx) => {
+                    print!("{}+>",cursor::Goto(1,(7+idx*2) as u16));
+                },
+                Sel::Save => {
+                    print!("{}[{}]",cursor::Goto(SAVE_BUTTON_X,1),cursor::Right(4));
+                }
+            }                    
+
+            stdout().flush().unwrap();
+        }
+
+        fn update(&mut self, input:Input)->Option<Transition>{
+            match input {
+                Input::Back => Some(Transition::Pop),
+                Input::Up => {
+                    match self.sel{
+                        Sel::RocketComponent(idx) => {
+                            self.sel = Sel::Save;
+                        },
+                        Sel::NewComponent(idx) => {
+                            if idx == 0 {
+                                self.sel = Sel::RocketComponent(0);
+                            } else {
+                                self.sel = Sel::NewComponent(idx - 1);
+                            }
+                        },
+                        Sel::Save => {
+                            //do nothing
+                        }
+                    }
+                    self.full_redraw();
+                    None
+                },
+                Input::Down => {
+                    match self.sel{
+                        Sel::RocketComponent(idx) => {
+                            self.sel = Sel::NewComponent(0);
+                        },
+                        Sel::NewComponent(idx) => {
+                            if idx as usize != GAME.known_components.lock().unwrap().len() {
+                                self.sel = Sel::NewComponent(idx + 1);
+                            }
+                        },
+                        Sel::Save => {
+                            self.sel = Sel::RocketComponent(0);
+                        }
+                    }
+                    self.full_redraw();
+                    None
+                },
+                Input::Right => {
+                    match self.sel {
+                        Sel::RocketComponent(idx) => {
+                            if idx == self.rocket.components.len() as u8 -1 {
+                                self.sel = Sel::RocketComponent(0);
+                            } else {
+                                self.sel = Sel::RocketComponent(idx + 1);
+                            }
+                        },
+                        Sel::NewComponent(idx) => {
+                            //do nothing
+                        },
+                        Sel::Save => {
+                            //do nothing
+                        },
+                    }
+                    self.full_redraw();
+                    None
+                },
+                Input::Left => {
+                    match self.sel {
+                        Sel::RocketComponent(idx) => {
+                            if idx == 0 {
+                                self.sel = Sel::RocketComponent(self.rocket.components.len() as u8 - 1);
+                            } else {
+                                self.sel = Sel::RocketComponent(idx - 1)
+                            }
+                            self.full_redraw();
+                        },
+                        Sel::NewComponent(idx) => {
+                            //do nothing
+                        },
+                        Sel::Save => {
+                            //do nothing
+                        }
+                    }
+                    
+                    None
+                },
+                Input::Select => {
+                    match self.sel{
+                        Sel::RocketComponent(idx) => {
+                            //do nothing
+                        },
+                        Sel::NewComponent(idx) => {
+                            self.rocket.components.push(GAME.known_components.lock().unwrap()[idx as usize].clone());
+                            self.full_redraw();
+                        },
+                        Sel::Save => {
+                            match self.edited{
+                                Edited::Edit(idx) => {
+                                    GAME.rocket_designs.lock().unwrap()[idx as usize] = self.rocket.clone();
+                                },
+                                Edited::New => {
+                                    let mut rocket_designs = GAME.rocket_designs.lock().unwrap();
+                                    rocket_designs.push(self.rocket.clone());
+                                    self.edited = Edited::Edit(rocket_designs.len() as u8 - 1);
+                                }
+                            }
+                        },
+                    }
+                    None
+                },
+            }
+        }
+    }
+
+    impl View{
+        pub fn new_rocket()->View{
+            View{
+                rocket:Rocket::new(),
+                edited:Edited::New,
+                sel:Sel::NewComponent(0),
+            }
+        }
+
+        pub fn edit_rocket(idx:u8)->View{
+            View{
+                rocket:GAME.rocket_designs.lock().unwrap()[idx as usize].clone(),
+                edited:Edited::Edit(idx),
+                sel:Sel::RocketComponent(0),
+            }
+        }
+    }
+}
+                    
+                
+
+    
+
+
+    
