@@ -4,6 +4,9 @@ use std::mem;
 use termion::cursor;
 use termion::event::Event;
 use termion::event::Key;
+#[macro_use]
+use crate::ui_print;
+
 
 
 
@@ -54,7 +57,7 @@ impl UI {
     }
 
     pub fn start(&mut self) {
-        print!("{}", cursor::Hide);
+        ui_print!("{}", cursor::Hide);
         self.current_view.full_redraw();
     }
 
@@ -136,7 +139,8 @@ mod basic_tl_view {
     use std::io::stdout;
     use std::io::Write;
     use termion::{clear, cursor};
-
+    #[macro_use] use crate::ui_print;
+    
     pub struct View {
         title: &'static str,
         selection: u8,
@@ -150,16 +154,16 @@ mod basic_tl_view {
 
     impl FullView for View {
         fn full_redraw(&self) {
-            print!("{}{}", clear::All, cursor::Goto(1, 1));
-            print!("{}{}", self.title, cursor::Goto(1, 2));
+            ui_print!("{}{}", clear::All, cursor::Goto(1, 1));
+            ui_print!("{}{}", self.title, cursor::Goto(1, 2));
             for (idx, tab) in self.tabs.iter().enumerate() {
                 print!("{}", cursor::Goto(1, 2 + idx as u16));
                 if idx as u8 == self.selection {
-                    print!("▶");
+                    ui_print!("▶");
                 } else {
-                    print!("{}", cursor::Right(2));
+                    ui_print!("{}", cursor::Right(2));
                 }
-                print!("{}", tab.name);
+                ui_print!("{}", tab.name);
             }
             stdout().flush().unwrap();
         }
@@ -246,12 +250,13 @@ mod unimplemented_view {
     use std::io::stdout;
     use std::io::Write;
     use termion::{clear, cursor};
+    #[macro_use] use crate::ui_print;
 
     pub struct View;
 
     impl FullView for View {
         fn full_redraw(&self) {
-            print!("{}{}Unimplemended View. 𒀿|", clear::All, cursor::Goto(1, 1));
+            ui_print!("{}{}Unimplemended View. 𒀿|", clear::All, cursor::Goto(1, 1));
             eprint!("STDERR");
             stdout().flush().unwrap();
         }

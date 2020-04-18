@@ -1,13 +1,14 @@
-use crate::orbit::Orbit;
-use crate::sats::{CubeSat, CubeSatClass, LargeSat, SatArray, SatId};
+use crate::sats::{CubeSat, LargeSat, SatArray, SatId, CubeSatClass};
 use crate::units::*;
-use crate::GAME;
 use rand::{seq::SliceRandom, thread_rng, Rng};
-use std::fmt;
 use std::fmt::Display;
+use std::fmt;
+use crate::GAME;
+use std::sync::Mutex;
 use std::sync::atomic::AtomicU8;
 use std::sync::atomic::Ordering;
-use std::sync::Mutex;
+use crate::orbit::Orbit;
+
 
 pub struct Job {
     pub customer: CustomerId,
@@ -26,7 +27,7 @@ pub struct Cargo {
     mass: Mass,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone,Copy)]
 pub struct CustomerId(u32);
 
 pub struct CustomerRegistry {
@@ -47,17 +48,19 @@ impl Job {
     }
 }
 
-const TARGET_CUSTOMERS: u8 = 5;
+
+const TARGET_CUSTOMERS:u8 = 5;
 
 impl CustomerRegistry {
-    pub fn new() -> CustomerRegistry {
-        CustomerRegistry {
-            customers: Mutex::new(Vec::new()),
+    pub fn new()->CustomerRegistry{
+        CustomerRegistry{
+            customers:Mutex::new(Vec::new()),
             target_customers: AtomicU8::new(TARGET_CUSTOMERS),
         }
     }
 
     fn get_or_generate(&self) -> CustomerId {
+        
         let idx = thread_rng().gen_range(0, self.target_customers.load(Ordering::Relaxed));
         let mut customers = self.customers.lock().unwrap();
         if idx as usize >= customers.len() {
@@ -68,13 +71,14 @@ impl CustomerRegistry {
         CustomerId(idx as u32)
     }
 
-    pub fn on<T, F: FnOnce(&Customer) -> T>(&self, CustomerId(idx): CustomerId, f: F) -> Option<T> {
+    pub fn on<T,F:FnOnce(&Customer)->T>(&self,CustomerId(idx):CustomerId,f:F)->Option<T>{
         let customers = self.customers.lock().unwrap();
-        if let Some(customer) = customers.get(idx as usize) {
+        if let Some(customer) = customers.get(idx as usize){
             Some(f(customer))
         } else {
             None
         }
+          
     }
 }
 
@@ -104,23 +108,25 @@ impl Customer {
 impl Payload {
     fn generate() -> Payload {
         //temp for testing
-        Payload::CubeSat(CubeSat {
-            class: CubeSatClass::CubeSat1U,
-            mass: Mass::kg(1),
-            orbit: Orbit,
-        })
+        Payload::CubeSat(CubeSat{class:CubeSatClass::CubeSat1U,mass:Mass::kg(1),orbit:Orbit})
     }
+
+   
+        
 }
 
-impl Display for Payload {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::CubeSat(sat) => write!(f, "CubeSat"),
-            Self::LargeSat(sat) => write!(f, "Large Sat"),
-            Self::SatArray(sat) => write!(f, "Sat Array"),
-            Self::Station(sat, cargo) => write!(f, "Delivery"),
-        }
-        .unwrap();
+impl Display for Payload{
+    fn fmt(&self, f:&mut fmt::Formatter<'_>)-> fmt::Result{
+        match self{
+            Self::CubeSat(sat) => write!(f,"{} CubeSat of {} kg to {}",sat.class,sat.mass.as_kg(),sat.orbit),
+            Self::LargeSat(sat) => write!(f,"Large Sat"),
+            Self::SatArray(sat) => write!(f,"Sat Array"),
+            Self::Station(sat,cargo) => write!(f,"Delivery"),
+        }.unwrap();
         Ok(())
     }
 }
+        
+
+
+   

@@ -3,6 +3,9 @@ mod orbit;
 mod rocket;
 mod sats;
 mod ui;
+#[macro_use]
+mod ui_print;
+
 
 #[macro_use]
 extern crate lazy_static;
@@ -31,6 +34,11 @@ mod units {
         pub fn kg(kg: u64) -> Mass {
             Mass(1000 * kg)
         }
+
+        pub fn as_kg(&self) -> f64 {
+            let Mass(g) = self;
+            *g as f64/1000.0
+        }
     }
 }
 fn main() {
@@ -45,6 +53,8 @@ fn main() {
             break;
         }
     }
+
+    ui_print!("foo");
 
     drop(ui); //ui should be dropped before the terminal exits raw mode
     drop(raw);
