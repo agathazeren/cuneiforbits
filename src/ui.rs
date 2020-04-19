@@ -57,7 +57,7 @@ impl UI {
     pub fn new() -> UI {
         UI {
             current_view: Box::new(basic_tl_view::View::new()),
-            view_stack: Vec::new(),
+            view_stack: vec![Box::new(exit_confirmation_view::View::new())],
             input_mode: InputMode::Control,
         }
     }
@@ -1025,3 +1025,114 @@ mod rocket_builder_view {
         }
     }
 }
+
+
+mod exit_confirmation_view {
+    use super::view_prelude::*;
+    use termion::clear;
+    use termion::cursor;
+    use std::io::stdout;
+    use std::io::Write;
+
+    pub struct View{
+        inner_view:Option<Box<dyn FullView>>,
+        sel:Sel,
+    }
+
+    #[derive(PartialEq,Eq)]
+    enum Sel{
+        Yes,No
+    }
+
+    impl FullView for View{
+        fn full_redraw(&self){
+            print!("{}",clear::All);
+            if let Some(inner) = &self.inner_view{
+                inner.full_redraw();
+            }
+            
+            const X_START:u16 = 3;
+            const Y_START:u16 = 2;
+            const WIDTH:u16 = 34;
+            const HEIGHT:u16 = 4;
+
+            print!("{}+{}+",
+                   cursor::Goto(X_START,Y_START),
+                   "-".repeat(WIDTH as usize  - 2));
+            for y in (Y_START + 1)..(Y_START + HEIGHT - 1){
+                print!("{}|{}|",cursor::Goto(X_START,y)," ".repeat(WIDTH as usize - 2));
+            }
+
+            print!("{}+{}+",cursor::Goto(X_START,Y_START + HEIGHT - 1),"-".repeat(WIDTH as usize - 2));
+
+            print!("{}Are you sure you want to exit?",cursor::Goto(X_START + 2, Y_START + 1));
+            print!("{} YES {} NO ",cursor::Goto(X_START + 5,Y_START + 2),cursor::Right(5));
+
+            let sel_x = match self.sel{
+                Sel::Yes => X_START + 5,
+                Sel::No => X_START + 15,
+            };
+
+            let sel_width = match self.sel{
+                Sel::Yes => 3,
+                Sel::No => 2,
+            };
+
+            print!("{}[{}]",cursor::Goto(sel_x,Y_START+2),cursor::Right(sel_width));
+
+            stdout().flush().unwrap();
+        }
+
+        fn update(&mut self, input:Input) -> Option<Transition> {
+            match input{
+                Input::Left => {
+                    if self.sel == Sel::No {
+                        self.sel = Sel::Yes;
+                    }
+                    self.full_redraw();
+                    None
+                }
+                Input::Right => {
+                    if self.sel == Sel::Yes {
+                        self.sel = Sel::No;
+                    }
+                    self.full_redraw();
+                    None
+                }
+                Input::Select => {
+                    match self.sel{
+                        Sel::Yes => {
+                            Some(Transition::Pop)
+                        }
+                        Sel::No => {
+                            Some(Transition::Push(self.inner_view.take().unwrap()))
+                        }
+                    }
+                }
+                _ => None
+            }
+        }
+
+        fn restart(&mut self, from_view:Box<dyn FullView>) -> Option<Transition>{
+            self.inner_view = Some(from_view);
+            self.full_redraw();
+            None
+        }
+    }
+
+    impl View{
+        pub fn new()->View{
+            View{
+                sel:Sel::No,
+                inner_view:None,
+            }
+        }
+    }
+
+}
+            
+                   
+                   
+            
+            
+        

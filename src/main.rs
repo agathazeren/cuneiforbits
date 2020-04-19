@@ -69,6 +69,9 @@ fn main() {
 
     drop(ui); //ui should be dropped before the terminal exits raw mode
     drop(raw);
+
+
+
 }
 
 lazy_static! {
