@@ -109,7 +109,7 @@ impl Customer {
 
 impl Payload {
     fn generate() -> Payload {
-        //temp for testing
+        //TODO: actually generate these
         Payload::CubeSat(CubeSat {
             class: CubeSatClass::CubeSat1U,
             mass: Mass::kg(1),

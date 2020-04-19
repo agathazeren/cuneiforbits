@@ -333,7 +333,7 @@ mod basic_tl_view {
                     } else {
                         self.selection -= 1;
                     }
-                    self.full_redraw(); //optimize all of these to only change what is neccecary
+                    self.full_redraw(); //TODO optimize all of these to only change what is neccecary
                     None
                 }
                 Input::Down => {

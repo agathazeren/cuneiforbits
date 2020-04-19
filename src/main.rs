@@ -23,13 +23,17 @@ use ui::UI;
 
 mod units {
     #[derive(Clone, Copy)]
-    pub struct Mass(u64); //g
+    /// A mass, represented as an integer number of grams.
+    pub struct Mass(u64);
+    /// A specific impulse, represented as an integer number of seconds.
     #[derive(Clone, Copy)]
-    pub struct Isp(u64); //s
+    pub struct Isp(u64);
+    /// A volume, represented as an integer number of liters.
     #[derive(Clone, Copy)]
-    pub struct Volume(u64); //L
+    pub struct Volume(u64);
+    /// A preasure, represented as an integer number of pascals.
     #[derive(Clone, Copy)]
-    pub struct Preasure(u64); //Pa
+    pub struct Preasure(u64);
 
     impl Mass {
         pub fn kg(kg: u64) -> Mass {
