@@ -1,8 +1,7 @@
 use crate::orbit::Orbit;
 use crate::units::*;
-use std::fmt::Display;
 use std::fmt;
-
+use std::fmt::Display;
 
 pub struct SatId(u32);
 
@@ -59,13 +58,17 @@ impl SatRegistry {
     }
 }
 
-impl Display for CubeSatClass{
-    fn fmt(&self, f: &mut fmt::Formatter)->fmt::Result{
-        write!(f,"{}", match self{
-            Self::CubeSat1U => "1U",
-            Self::CubeSat2U => "2U",
-            Self::CubeSat3U => "3U",
-            Self::CubeSat6U => "6U",
-        })
+impl Display for CubeSatClass {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::CubeSat1U => "1U",
+                Self::CubeSat2U => "2U",
+                Self::CubeSat3U => "3U",
+                Self::CubeSat6U => "6U",
+            }
+        )
     }
 }

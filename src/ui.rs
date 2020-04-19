@@ -97,14 +97,16 @@ impl UI {
             }
             Some(Transition::InputMode(mode)) => {
                 self.input_mode = mode;
-            },
+            }
             Some(Transition::Multiple(vec)) => {
                 let mut ret = true;
-                for transition in vec{
+                for transition in vec {
                     ret &= self.handle_trans(Some(transition));
                 }
-                if !ret {return false}
-            },
+                if !ret {
+                    return false;
+                }
+            }
             None => {}
         }
         true
@@ -159,17 +161,17 @@ impl InputMode {
 }
 
 mod view_prelude {
+    pub use super::type_box::TypeBox;
     pub use super::FullView;
     pub use super::Input;
+    pub use super::InputMode;
     pub use super::Transition;
     pub use crate::GAME;
-    pub use super::type_box::TypeBox;
-    pub use super::InputMode;
 }
 
 pub mod type_box {
     use super::Input;
-    
+
     pub struct TypeBox {
         pub content: String,
         cursor: u8,
@@ -182,25 +184,23 @@ pub mod type_box {
     impl TypeBox {
         pub fn activate(&mut self, activate: bool) {
             if self.active && !activate {
-                print!("{}{}",termion::cursor::Hide,termion::cursor::Restore);
+                print!("{}{}", termion::cursor::Hide, termion::cursor::Restore);
             }
 
             if !self.active && activate {
-                print!("{}",termion::cursor::BlinkingBlock)
+                print!("{}", termion::cursor::BlinkingBlock)
             }
             self.active = activate;
         }
 
-
-
-        pub fn take_input(&mut self, input: &Input)->ShouldRedraw {
+        pub fn take_input(&mut self, input: &Input) -> ShouldRedraw {
             if !self.active {
                 return false;
             }
             match input {
                 Input::Type(c) if *c != '\n' => {
                     if self.cursor < self.len {
-                        self.content.insert(self.cursor as usize,*c);
+                        self.content.insert(self.cursor as usize, *c);
                         self.cursor += 1;
                     } // TODO: allow horizontal scrolling to enable longer content
                     true
@@ -217,20 +217,20 @@ pub mod type_box {
                     }
                     true
                 }
-                Input::BkSpace=>{
+                Input::BkSpace => {
                     if self.cursor != 0 {
                         self.cursor -= 1;
                         self.content.remove(self.cursor as usize);
                     }
                     true
                 }
-                Input::Del=>{
+                Input::Del => {
                     if (self.cursor as usize) < self.content.len() {
                         self.content.remove(self.cursor as usize);
                     }
                     true
                 }
-                _ => false
+                _ => false,
             }
         }
 
@@ -245,7 +245,12 @@ pub mod type_box {
             if self.active {
                 print!("{}{}", color::Fg(color::Black), color::Bg(color::White));
             }
-            print!("{}{}{}", termion::cursor::Goto(self.loc_x, self.loc_y), self.content," ".repeat(self.len as usize - self.content.len()));
+            print!(
+                "{}{}{}",
+                termion::cursor::Goto(self.loc_x, self.loc_y),
+                self.content,
+                " ".repeat(self.len as usize - self.content.len())
+            );
             if self.active {
                 print!("{}{}", color::Fg(color::Reset), color::Bg(color::Reset));
             }
@@ -811,7 +816,7 @@ mod rocket_builder_view {
     impl FullView for View {
         fn full_redraw(&self) {
             self.name.before_render();
-            
+
             print!("{}{}", clear::All, cursor::Goto(1, 1));
 
             print!("{}", self.rocket.name);
@@ -864,7 +869,7 @@ mod rocket_builder_view {
                 }
                 Sel::Save => {
                     print!("{}[{}]", cursor::Goto(SAVE_BUTTON_X, 1), cursor::Right(4));
-                },
+                }
                 Sel::Name => {}
             }
 
@@ -881,9 +886,10 @@ mod rocket_builder_view {
             }
 
             match input {
-                Input::Back => {
-                    Some(Transition::Multiple(vec![Transition::InputMode(InputMode::Control), Transition::Pop]))
-                },
+                Input::Back => Some(Transition::Multiple(vec![
+                    Transition::InputMode(InputMode::Control),
+                    Transition::Pop,
+                ])),
                 Input::Up => {
                     match self.sel {
                         Sel::RocketComponent(idx) => {
@@ -899,7 +905,6 @@ mod rocket_builder_view {
                             }
                         }
                         Sel::Save | Sel::Name => {}
-                        
                     }
                     self.full_redraw();
                     None
@@ -910,7 +915,7 @@ mod rocket_builder_view {
                             self.sel = Sel::NewComponent(0);
                         }
                         Sel::NewComponent(idx) => {
-                            if idx as usize != GAME.known_components.lock().unwrap().len() - 1{
+                            if idx as usize != GAME.known_components.lock().unwrap().len() - 1 {
                                 self.sel = Sel::NewComponent(idx + 1);
                             }
                         }
@@ -940,87 +945,79 @@ mod rocket_builder_view {
                     self.full_redraw();
                     None
                 }
-                Input::Left => {
-                    match self.sel {
-                        Sel::RocketComponent(idx) => {
-                            if idx == 0 {
+                Input::Left => match self.sel {
+                    Sel::RocketComponent(idx) => {
+                        if idx == 0 {
+                            self.sel = Sel::RocketComponent(self.rocket.components.len() as u8 - 1);
+                        } else {
+                            self.sel = Sel::RocketComponent(idx - 1)
+                        }
+                        self.full_redraw();
+                        None
+                    }
+                    Sel::NewComponent(idx) => None,
+                    Sel::Save => {
+                        self.sel = Sel::Name;
+                        self.name.activate(true);
+                        self.full_redraw();
+                        Some(Transition::InputMode(InputMode::Type))
+                    }
+                    Sel::Name => None,
+                },
+                Input::Select | Input::Type('\n') => match self.sel {
+                    Sel::RocketComponent(idx) => None,
+                    Sel::NewComponent(idx) => {
+                        self.rocket
+                            .components
+                            .push(GAME.known_components.lock().unwrap()[idx as usize].clone());
+                        self.full_redraw();
+                        None
+                    }
+                    Sel::Save => match self.edited {
+                        Edited::Edit(idx) => {
+                            GAME.rocket_designs.lock().unwrap()[idx as usize] = self.rocket.clone();
+                            None
+                        }
+                        Edited::New => {
+                            let mut rocket_designs = GAME.rocket_designs.lock().unwrap();
+                            rocket_designs.push(self.rocket.clone());
+                            self.edited = Edited::Edit(rocket_designs.len() as u8 - 1);
+                            None
+                        }
+                    },
+                    Sel::Name => {
+                        self.name.activate(false);
+                        self.rocket.name = self.name.content.clone();
+                        self.sel = Sel::Save;
+                        self.full_redraw();
+                        Some(Transition::InputMode(InputMode::Control))
+                    }
+                },
+                Input::Del => match self.sel {
+                    Sel::RocketComponent(idx) => {
+                        self.rocket.components.remove(idx as usize);
+                        if idx as usize >= self.rocket.components.len() {
+                            if self.rocket.components.len() == 0 {
+                                self.sel = Sel::NewComponent(0);
+                            } else {
                                 self.sel =
                                     Sel::RocketComponent(self.rocket.components.len() as u8 - 1);
-                            } else {
-                                self.sel = Sel::RocketComponent(idx - 1)
                             }
-                            self.full_redraw();
-                            None
                         }
-                        Sel::NewComponent(idx) => None,
-                        Sel::Save => {
-                            self.sel = Sel::Name;
-                            self.name.activate(true);
-                            self.full_redraw();
-                            Some(Transition::InputMode(InputMode::Type))
-                        },
-                        Sel::Name => None,
+                        self.full_redraw();
+                        None
                     }
-                }
-                Input::Select | Input::Type('\n') => {
-                    match self.sel {
-                        Sel::RocketComponent(idx) => None,
-                        Sel::NewComponent(idx) => {
-                            self.rocket
-                                .components
-                                .push(GAME.known_components.lock().unwrap()[idx as usize].clone());
-                            self.full_redraw();
-                            None
-                        }
-                        Sel::Save => match self.edited {
-                            Edited::Edit(idx) => {
-                                GAME.rocket_designs.lock().unwrap()[idx as usize] =
-                                    self.rocket.clone();
-                                None
-                            }
-                            Edited::New => {
-                                let mut rocket_designs = GAME.rocket_designs.lock().unwrap();
-                                rocket_designs.push(self.rocket.clone());
-                                self.edited = Edited::Edit(rocket_designs.len() as u8 - 1);
-                                None
-                            }
-                        },
-                        Sel::Name => {
-                            self.name.activate(false);
-                            self.rocket.name = self.name.content.clone();
-                            self.sel = Sel::Save;
-                            self.full_redraw();
-                            Some(Transition::InputMode(InputMode::Control))
-                        }
-                    }
-                }
-                Input::Del => {
-                    match self.sel{
-                        Sel::RocketComponent(idx) => {
-                            self.rocket.components.remove(idx as usize);
-                            if idx as usize >= self.rocket.components.len() {
-                                if self.rocket.components.len() == 0 {
-                                    self.sel = Sel::NewComponent(0);
-                                } else {
-                                    self.sel = Sel::RocketComponent(self.rocket.components.len() as u8 - 1);
-                                }
-                            }
-                            self.full_redraw();
-                            None
-                        }
-                        _ => None
-                    }
-                }
+                    _ => None,
+                },
                 _ => None,
             }
         }
 
-        fn start(&mut self)->Option<Transition>{
+        fn start(&mut self) -> Option<Transition> {
             self.name.content = self.rocket.name.clone();
             self.full_redraw();
             None
         }
-            
     }
 
     impl View {
@@ -1029,7 +1026,7 @@ mod rocket_builder_view {
                 rocket: Rocket::new(),
                 edited: Edited::New,
                 sel: Sel::NewComponent(0),
-                name: TypeBox::new().at(1,1).with_len(20),
+                name: TypeBox::new().at(1, 1).with_len(20),
             }
         }
 
@@ -1038,72 +1035,92 @@ mod rocket_builder_view {
                 rocket: GAME.rocket_designs.lock().unwrap()[idx as usize].clone(),
                 edited: Edited::Edit(idx),
                 sel: Sel::RocketComponent(0),
-                name: TypeBox::new().at(1,1).with_len(20),
+                name: TypeBox::new().at(1, 1).with_len(20),
             }
         }
     }
 }
 
-
 mod exit_confirmation_view {
     use super::view_prelude::*;
-    use termion::clear;
-    use termion::cursor;
     use std::io::stdout;
     use std::io::Write;
+    use termion::clear;
+    use termion::cursor;
 
-    pub struct View{
-        inner_view:Option<Box<dyn FullView>>,
-        sel:Sel,
+    pub struct View {
+        inner_view: Option<Box<dyn FullView>>,
+        sel: Sel,
     }
 
-    #[derive(PartialEq,Eq)]
-    enum Sel{
-        Yes,No
+    #[derive(PartialEq, Eq)]
+    enum Sel {
+        Yes,
+        No,
     }
 
-    impl FullView for View{
-        fn full_redraw(&self){
-            print!("{}",clear::All);
-            if let Some(inner) = &self.inner_view{
+    impl FullView for View {
+        fn full_redraw(&self) {
+            print!("{}", clear::All);
+            if let Some(inner) = &self.inner_view {
                 inner.full_redraw();
             }
-            
-            const X_START:u16 = 3;
-            const Y_START:u16 = 2;
-            const WIDTH:u16 = 34;
-            const HEIGHT:u16 = 4;
 
-            print!("{}+{}+",
-                   cursor::Goto(X_START,Y_START),
-                   "-".repeat(WIDTH as usize  - 2));
-            for y in (Y_START + 1)..(Y_START + HEIGHT - 1){
-                print!("{}|{}|",cursor::Goto(X_START,y)," ".repeat(WIDTH as usize - 2));
+            const X_START: u16 = 3;
+            const Y_START: u16 = 2;
+            const WIDTH: u16 = 34;
+            const HEIGHT: u16 = 4;
+
+            print!(
+                "{}+{}+",
+                cursor::Goto(X_START, Y_START),
+                "-".repeat(WIDTH as usize - 2)
+            );
+            for y in (Y_START + 1)..(Y_START + HEIGHT - 1) {
+                print!(
+                    "{}|{}|",
+                    cursor::Goto(X_START, y),
+                    " ".repeat(WIDTH as usize - 2)
+                );
             }
 
-            print!("{}+{}+",cursor::Goto(X_START,Y_START + HEIGHT - 1),"-".repeat(WIDTH as usize - 2));
+            print!(
+                "{}+{}+",
+                cursor::Goto(X_START, Y_START + HEIGHT - 1),
+                "-".repeat(WIDTH as usize - 2)
+            );
 
-            print!("{}Are you sure you want to exit?",cursor::Goto(X_START + 2, Y_START + 1));
-            print!("{} YES {} NO ",cursor::Goto(X_START + 5,Y_START + 2),cursor::Right(5));
+            print!(
+                "{}Are you sure you want to exit?",
+                cursor::Goto(X_START + 2, Y_START + 1)
+            );
+            print!(
+                "{} YES {} NO ",
+                cursor::Goto(X_START + 5, Y_START + 2),
+                cursor::Right(5)
+            );
 
-            let sel_x = match self.sel{
+            let sel_x = match self.sel {
                 Sel::Yes => X_START + 5,
                 Sel::No => X_START + 15,
             };
 
-            let sel_width = match self.sel{
+            let sel_width = match self.sel {
                 Sel::Yes => 3,
                 Sel::No => 2,
             };
 
- 
-           print!("{}[{}]",cursor::Goto(sel_x,Y_START+2),cursor::Right(sel_width));
+            print!(
+                "{}[{}]",
+                cursor::Goto(sel_x, Y_START + 2),
+                cursor::Right(sel_width)
+            );
 
             stdout().flush().unwrap();
         }
 
-        fn update(&mut self, input:Input) -> Option<Transition> {
-            match input{
+        fn update(&mut self, input: Input) -> Option<Transition> {
+            match input {
                 Input::Left => {
                     if self.sel == Sel::No {
                         self.sel = Sel::Yes;
@@ -1118,40 +1135,27 @@ mod exit_confirmation_view {
                     self.full_redraw();
                     None
                 }
-                Input::Select => {
-                    match self.sel{
-                        Sel::Yes => {
-                            Some(Transition::Pop)
-                        }
-                        Sel::No => {
-                            Some(Transition::Push(self.inner_view.take().unwrap()))
-                        }
-                    }
-                }
-                _ => None
+                Input::Select => match self.sel {
+                    Sel::Yes => Some(Transition::Pop),
+                    Sel::No => Some(Transition::Push(self.inner_view.take().unwrap())),
+                },
+                _ => None,
             }
         }
 
-        fn restart(&mut self, from_view:Box<dyn FullView>) -> Option<Transition>{
+        fn restart(&mut self, from_view: Box<dyn FullView>) -> Option<Transition> {
             self.inner_view = Some(from_view);
             self.full_redraw();
             None
         }
     }
 
-    impl View{
-        pub fn new()->View{
-            View{
-                sel:Sel::No,
-                inner_view:None,
+    impl View {
+        pub fn new() -> View {
+            View {
+                sel: Sel::No,
+                inner_view: None,
             }
         }
     }
-
 }
-            
-                   
-                   
-            
-            
-        

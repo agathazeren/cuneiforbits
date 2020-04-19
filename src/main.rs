@@ -6,7 +6,6 @@ mod ui;
 #[macro_use]
 mod ui_print;
 
-
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
@@ -14,9 +13,9 @@ extern crate static_assertions;
 
 use job::CustomerRegistry;
 use job::Job;
+use rocket::Component;
 use rocket::Rocket;
 use sats::SatRegistry;
-use rocket::Component;
 
 use std::io::Write;
 
@@ -26,13 +25,13 @@ use termion::raw::IntoRawMode;
 use ui::UI;
 
 mod units {
-    #[derive(Clone,Copy)]
+    #[derive(Clone, Copy)]
     pub struct Mass(u64); //g
-    #[derive(Clone,Copy)]
+    #[derive(Clone, Copy)]
     pub struct Isp(u64); //s
-    #[derive(Clone,Copy)]
+    #[derive(Clone, Copy)]
     pub struct Volume(u64); //L
-    #[derive(Clone,Copy)]
+    #[derive(Clone, Copy)]
     pub struct Preasure(u64); //Pa
 
     impl Mass {
@@ -42,12 +41,12 @@ mod units {
 
         pub fn as_kg(&self) -> f64 {
             let Mass(g) = self;
-            *g as f64/1000.0
+            *g as f64 / 1000.0
         }
     }
 
     impl Isp {
-        pub fn s(s:u64)->Isp{
+        pub fn s(s: u64) -> Isp {
             Isp(s)
         }
     }
@@ -69,9 +68,6 @@ fn main() {
 
     drop(ui); //ui should be dropped before the terminal exits raw mode
     drop(raw);
-
-
-
 }
 
 lazy_static! {
@@ -84,7 +80,7 @@ pub struct Game {
     rocket_designs: Mutex<Vec<Rocket>>,
     available_jobs: Mutex<Vec<Job>>,
     accepted_jobs: Mutex<Vec<Job>>,
-    known_components:Mutex<Vec<Component>>,
+    known_components: Mutex<Vec<Component>>,
 }
 
 const TARGET_JOBS: usize = 3;
@@ -97,7 +93,7 @@ impl Game {
             rocket_designs: Mutex::new(Vec::new()),
             available_jobs: Mutex::new(Vec::new()),
             accepted_jobs: Mutex::new(Vec::new()),
-            known_components: Mutex::new(rocket::INITIAL_KNOWN_COMPONENTS.to_vec())
+            known_components: Mutex::new(rocket::INITIAL_KNOWN_COMPONENTS.to_vec()),
         }
     }
 
@@ -119,7 +115,6 @@ impl Game {
 
     fn decline_job_at(&self, idx: usize) {
         let _ = self.available_jobs.lock().unwrap().remove(idx);
-        
     }
 }
 
