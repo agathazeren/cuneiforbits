@@ -135,6 +135,7 @@ impl InputMode {
                     Key::Down | Key::Char('s') => Some(Input::Down),
                     Key::Char('\n') | Key::Char(' ') => Some(Input::Select),
                     Key::Esc => Some(Input::Back),
+                    Key::Delete | Key::Backspace => Some(Input::Del),
                     _ => None,
                 },
                 Event::Mouse(me) => match me {
@@ -909,7 +910,7 @@ mod rocket_builder_view {
                             self.sel = Sel::NewComponent(0);
                         }
                         Sel::NewComponent(idx) => {
-                            if idx as usize != GAME.known_components.lock().unwrap().len() {
+                            if idx as usize != GAME.known_components.lock().unwrap().len() - 1{
                                 self.sel = Sel::NewComponent(idx + 1);
                             }
                         }
@@ -991,6 +992,23 @@ mod rocket_builder_view {
                             self.full_redraw();
                             Some(Transition::InputMode(InputMode::Control))
                         }
+                    }
+                }
+                Input::Del => {
+                    match self.sel{
+                        Sel::RocketComponent(idx) => {
+                            self.rocket.components.remove(idx as usize);
+                            if idx as usize >= self.rocket.components.len() {
+                                if self.rocket.components.len() == 0 {
+                                    self.sel = Sel::NewComponent(0);
+                                } else {
+                                    self.sel = Sel::RocketComponent(self.rocket.components.len() as u8 - 1);
+                                }
+                            }
+                            self.full_redraw();
+                            None
+                        }
+                        _ => None
                     }
                 }
                 _ => None,
@@ -1078,7 +1096,8 @@ mod exit_confirmation_view {
                 Sel::No => 2,
             };
 
-            print!("{}[{}]",cursor::Goto(sel_x,Y_START+2),cursor::Right(sel_width));
+ 
+           print!("{}[{}]",cursor::Goto(sel_x,Y_START+2),cursor::Right(sel_width));
 
             stdout().flush().unwrap();
         }
