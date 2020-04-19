@@ -1,6 +1,7 @@
 use std::fmt;
 use std::fmt::Display;
 
+#[derive(Clone, Copy)]
 pub struct Orbit; //TODO
 
 impl Display for Orbit {

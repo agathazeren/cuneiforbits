@@ -1,4 +1,10 @@
+#![allow(dead_code)]
+
+
+
+
 use crate::orbit::Orbit;
+use crate::sats::Sat;
 use crate::sats::{CubeSat, CubeSatClass, LargeSat, SatArray, SatId};
 use crate::units::*;
 use crate::GAME;
@@ -119,12 +125,35 @@ impl Display for Payload {
                 f,
                 "{} CubeSat of {} kg to {}",
                 sat.class,
-                sat.mass.as_kg(),
+                sat.mass.in_kg(),
                 sat.orbit
             ),
-            Self::LargeSat(sat) => write!(f, "Large Sat"),
-            Self::SatArray(sat) => write!(f, "Sat Array"),
-            Self::Station(sat, cargo) => write!(f, "Delivery"),
+            Self::LargeSat(sat) => write!(
+                f,
+                "{} kg {} m³ Satalite to {}",
+                sat.mass.in_kg(),
+                sat.volume.in_m3(),
+                sat.orbit
+            ),
+            Self::SatArray(sats) => write!(
+                f,
+                "Array of {} Satalites of total {} kg and {} m³",
+                sats.orbits.len(),
+                sats.base_mass.in_kg() + sats.sat_mass.in_kg() * sats.orbits.len() as f64,
+                sats.volume.in_m3()
+            ),
+            Self::Station(sat_id, cargo) => write!(
+                f,
+                "Delivery to {} in {} of {} kg, {} m³",
+                if let Sat::Station(sta) = GAME.sats.get(*sat_id).unwrap() {
+                    &sta.name
+                } else {
+                    "a satalite"
+                },
+                GAME.sats.get(*sat_id).unwrap().orbit(),
+                cargo.mass.in_kg(),
+                cargo.volume.in_m3()
+            ),
         }
         .unwrap();
         Ok(())

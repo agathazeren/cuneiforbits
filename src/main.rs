@@ -16,9 +16,6 @@ use job::Job;
 use rocket::Component;
 use rocket::Rocket;
 use sats::SatRegistry;
-
-use std::io::Write;
-
 use std::sync::Mutex;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
@@ -39,9 +36,9 @@ mod units {
             Mass(1000 * kg)
         }
 
-        pub fn as_kg(&self) -> f64 {
+        pub fn in_kg(self) -> f64 {
             let Mass(g) = self;
-            *g as f64 / 1000.0
+            g as f64 / 1000.0
         }
     }
 
@@ -50,10 +47,17 @@ mod units {
             Isp(s)
         }
     }
+
+    impl Volume {
+        pub fn in_m3(self) -> f64 {
+            let Volume(l) = self;
+            l as f64 * 1000.0
+        }
+    }
 }
 fn main() {
     let stdin = std::io::stdin();
-    let mut raw = std::io::stdout().into_raw_mode().unwrap();
+    let raw = std::io::stdout().into_raw_mode().unwrap();
 
     let mut ui = UI::new();
     ui.start();

@@ -1,15 +1,19 @@
+#![allow(dead_code)] //temp
+
 use crate::orbit::Orbit;
 use crate::units::*;
 use std::fmt;
 use std::fmt::Display;
 
+#[derive(Clone, Copy)]
 pub struct SatId(u32);
 
 pub struct SatRegistry {
     sats: Vec<Sat>, //Should this be indexmap?
 }
 
-enum Sat {
+#[allow(clippy::enum_variant_names)] //Should we change this as clippy suggests? I am torn.
+pub enum Sat {
     CubeSat(CubeSat),
     LargeSat(LargeSat),
     ArraySat(ArraySat),
@@ -30,16 +34,16 @@ pub enum CubeSatClass {
 }
 
 pub struct LargeSat {
-    volume: Volume,
-    mass: Mass,
-    orbit: Orbit,
+    pub volume: Volume,
+    pub mass: Mass,
+    pub orbit: Orbit,
 }
 
 pub struct SatArray {
-    volume: Volume,
-    base_mass: Mass,
-    sat_mass: Mass,
-    orbits: Vec<Orbit>,
+    pub volume: Volume,
+    pub base_mass: Mass,
+    pub sat_mass: Mass,
+    pub orbits: Vec<Orbit>,
 }
 
 pub struct ArraySat {
@@ -47,14 +51,30 @@ pub struct ArraySat {
     orbit: Orbit,
 }
 
-struct Station {
-    name: String,
-    orbit: Orbit,
+pub struct Station {
+    pub name: String,
+    pub orbit: Orbit,
 }
 
 impl SatRegistry {
     pub fn new() -> SatRegistry {
         SatRegistry { sats: Vec::new() }
+    }
+
+    pub fn get(&self, id: SatId) -> Option<&Sat> {
+        let SatId(idx) = id;
+        self.sats.get(idx as usize)
+    }
+}
+
+impl Sat {
+    pub fn orbit(&self) -> Orbit {
+        match self {
+            Sat::CubeSat(sat) => sat.orbit,
+            Sat::LargeSat(sat) => sat.orbit,
+            Sat::ArraySat(sat) => sat.orbit,
+            Sat::Station(sat) => sat.orbit,
+        }
     }
 }
 

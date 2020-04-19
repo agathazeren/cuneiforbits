@@ -1,11 +1,10 @@
+use crate::ui_print;
 use std::io::stdout;
 use std::io::Write;
 use std::mem;
 use termion::cursor;
 use termion::event::Event;
 use termion::event::Key;
-#[macro_use]
-use crate::ui_print;
 
 pub struct UI {
     current_view: Box<dyn FullView>,
@@ -140,9 +139,7 @@ impl InputMode {
                     Key::Delete | Key::Backspace => Some(Input::Del),
                     _ => None,
                 },
-                Event::Mouse(me) => match me {
-                    _ => None,
-                },
+                Event::Mouse(_) => None,
                 Event::Unsupported(_) => None,
             },
             InputMode::Type => match event {
@@ -281,26 +278,25 @@ pub mod type_box {
             assert!(loc_x >= 1);
             assert!(loc_y >= 1);
             TypeBox {
-                loc_x: loc_x,
-                loc_y: loc_y,
+                loc_x,
+                loc_y,
                 ..self
             }
         }
 
         pub fn with_len(self, len: u8) -> TypeBox {
-            TypeBox { len: len, ..self }
+            TypeBox { len, ..self }
         }
     }
 }
 
 mod basic_tl_view {
     use super::view_prelude::*;
+    use crate::ui_print;
     use std::convert::TryInto;
     use std::io::stdout;
     use std::io::Write;
     use termion::{clear, cursor};
-    #[macro_use]
-    use crate::ui_print;
 
     pub struct View {
         title: &'static str,
@@ -409,11 +405,10 @@ mod basic_tl_view {
 
 mod unimplemented_view {
     use super::view_prelude::*;
+    use crate::ui_print;
     use std::io::stdout;
     use std::io::Write;
     use termion::{clear, cursor};
-    #[macro_use]
-    use crate::ui_print;
 
     pub struct View;
 
@@ -626,7 +621,6 @@ mod tick_view {
 
 mod rockets_view {
     use super::view_prelude::*;
-    #[macro_use]
     use crate::ui_print;
     use std::io::stdout;
     use std::io::Write;
@@ -786,10 +780,9 @@ mod rockets_view {
 
 mod rocket_builder_view {
     use super::view_prelude::*;
-    #[macro_use]
-    use crate::ui_print;
     use crate::rocket::Component;
     use crate::rocket::Rocket;
+    use crate::ui_print;
     use std::io::stdout;
     use std::io::Write;
     use termion::{clear, cursor};
@@ -850,7 +843,7 @@ mod rocket_builder_view {
                     component.name,
                     component.class.symbol(),
                     cursor::Goto(6 + Component::MAX_WIDTH, (8 + idx * 2) as u16),
-                    component.mass.as_kg(),
+                    component.mass.in_kg(),
                 );
             }
 
@@ -892,11 +885,11 @@ mod rocket_builder_view {
                 ])),
                 Input::Up => {
                     match self.sel {
-                        Sel::RocketComponent(idx) => {
+                        Sel::RocketComponent(_) => {
                             self.sel = Sel::Save;
                         }
                         Sel::NewComponent(idx) => {
-                            if idx == 0 && self.rocket.components.len() > 0 {
+                            if idx == 0 && !self.rocket.components.is_empty() {
                                 self.sel = Sel::RocketComponent(0);
                             } else if idx == 0 {
                                 self.sel = Sel::Save;
@@ -911,7 +904,7 @@ mod rocket_builder_view {
                 }
                 Input::Down => {
                     match self.sel {
-                        Sel::RocketComponent(idx) => {
+                        Sel::RocketComponent(_) => {
                             self.sel = Sel::NewComponent(0);
                         }
                         Sel::NewComponent(idx) => {
@@ -920,7 +913,7 @@ mod rocket_builder_view {
                             }
                         }
                         Sel::Save => {
-                            self.sel = if self.rocket.components.len() > 0 {
+                            self.sel = if !self.rocket.components.is_empty() {
                                 Sel::RocketComponent(0)
                             } else {
                                 Sel::NewComponent(0)
@@ -955,7 +948,7 @@ mod rocket_builder_view {
                         self.full_redraw();
                         None
                     }
-                    Sel::NewComponent(idx) => None,
+                    Sel::NewComponent(_) => None,
                     Sel::Save => {
                         self.sel = Sel::Name;
                         self.name.activate(true);
@@ -965,7 +958,7 @@ mod rocket_builder_view {
                     Sel::Name => None,
                 },
                 Input::Select | Input::Type('\n') => match self.sel {
-                    Sel::RocketComponent(idx) => None,
+                    Sel::RocketComponent(_) => None,
                     Sel::NewComponent(idx) => {
                         self.rocket
                             .components
@@ -997,7 +990,7 @@ mod rocket_builder_view {
                     Sel::RocketComponent(idx) => {
                         self.rocket.components.remove(idx as usize);
                         if idx as usize >= self.rocket.components.len() {
-                            if self.rocket.components.len() == 0 {
+                            if self.rocket.components.is_empty() {
                                 self.sel = Sel::NewComponent(0);
                             } else {
                                 self.sel =
