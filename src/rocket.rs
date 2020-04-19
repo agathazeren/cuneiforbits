@@ -45,8 +45,6 @@ pub struct Component {
     pub display: String,
     pub mass: Mass,
     pub class: ComponentClass,
-    pub attatch_up: bool,
-    pub attatch_down: bool,
 }
 
 
@@ -103,32 +101,24 @@ lazy_static!{
             display: "Foo".to_string(),
             mass: Mass::kg(12),
             class: ComponentClass::Engine(PropellantType::Hyrdolox,Isp::s(3)),
-            attatch_up: true,
-            attatch_down: true
         },
         Component{
             name: "Bar".to_string(),
             display: "Foo".to_string(),
             mass: Mass::kg(12),
             class: ComponentClass::Engine(PropellantType::Hyrdolox,Isp::s(3)),
-            attatch_up: true,
-            attatch_down: true
         },
         Component{
             name: "Baz".to_string(),
             display: "Foo".to_string(),
             mass: Mass::kg(12),
             class: ComponentClass::Engine(PropellantType::Hyrdolox,Isp::s(3)),
-            attatch_up: true,
-            attatch_down: true
         },
         Component{
             name: "Quux".to_string(),
             display: "Foo".to_string(),
             mass: Mass::kg(12),
             class: ComponentClass::Engine(PropellantType::Hyrdolox,Isp::s(3)),
-            attatch_up: true,
-            attatch_down: true
         },
 
    ];

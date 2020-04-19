@@ -675,8 +675,10 @@ mod rocket_builder_view{
                             self.sel = Sel::Save;
                         },
                         Sel::NewComponent(idx) => {
-                            if idx == 0 {
+                            if idx == 0 && self.rocket.components.len() > 0{
                                 self.sel = Sel::RocketComponent(0);
+                            } else if idx == 0{
+                                self.sel = Sel::Save;
                             } else {
                                 self.sel = Sel::NewComponent(idx - 1);
                             }
@@ -699,7 +701,11 @@ mod rocket_builder_view{
                             }
                         },
                         Sel::Save => {
-                            self.sel = Sel::RocketComponent(0);
+                            self.sel = if self.rocket.components.len() > 0 {
+                                Sel::RocketComponent(0)
+                            } else {
+                                Sel::NewComponent(0)
+                            };
                         }
                     }
                     self.full_redraw();
