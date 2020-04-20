@@ -15,6 +15,7 @@ extern crate lazy_static;
 #[macro_use]
 extern crate static_assertions;
 
+use debug_log::DEBUG;
 use job::CustomerRegistry;
 use job::Job;
 use rocket::Component;
@@ -24,8 +25,6 @@ use std::sync::Mutex;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use ui::UI;
-use debug_log::DEBUG;
-
 
 mod units {
     #[derive(Clone, Copy, Debug)]
@@ -80,8 +79,6 @@ fn main() {
         DEBUG.on_event(&event);
         DEBUG.redraw();
     }
-
-    ui_print!("foo");
 
     drop(ui); //ui should be dropped before the terminal exits raw mode
     drop(raw);

@@ -8,7 +8,6 @@ use std::fmt::Display;
 #[derive(Clone, Copy, Debug)]
 pub struct SatId(u32);
 
-
 #[derive(Debug)]
 pub struct SatRegistry {
     sats: Vec<Sat>, //Should this be indexmap?
@@ -30,7 +29,6 @@ pub struct CubeSat {
     pub orbit: Orbit,
 }
 
-
 #[derive(Debug)]
 pub enum CubeSatClass {
     CubeSat1U,
@@ -38,7 +36,6 @@ pub enum CubeSatClass {
     CubeSat3U,
     CubeSat6U,
 }
-
 
 #[derive(Debug)]
 pub struct LargeSat {

@@ -21,7 +21,6 @@ pub struct Job {
     pub payload: Payload,
 }
 
-
 #[derive(Debug)]
 pub enum Payload {
     CubeSat(CubeSat),

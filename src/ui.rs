@@ -6,9 +6,6 @@ use termion::cursor;
 use termion::event::Event;
 use termion::event::Key;
 
-
-
-
 pub struct UI {
     current_view: Box<dyn FullView>,
     view_stack: Vec<Box<dyn FullView>>,
@@ -593,11 +590,11 @@ mod jobs_view {
 
 mod tick_view {
     use super::view_prelude::*;
+    use crate::debug_log::DEBUG;
     use crate::GAME;
     use std::io::stdout;
     use std::io::Write;
     use termion::clear;
-    use crate::debug_log::DEBUG;
 
     pub struct View;
 
@@ -629,7 +626,6 @@ mod rockets_view {
     use std::io::stdout;
     use std::io::Write;
     use termion::{clear, cursor};
-    use crate::debug_at;
 
     pub struct View {
         sel: Sel,
@@ -719,7 +715,7 @@ mod rockets_view {
                 }
                 Input::Left | Input::Right => {
                     match self.sel {
-                        Sel::New => {},
+                        Sel::New => {}
                         Sel::Rocket(idx) => {
                             self.sel = Sel::RocketEdit(idx);
                             self.full_redraw();
