@@ -3,6 +3,10 @@ mod orbit;
 mod rocket;
 mod sats;
 mod ui;
+
+#[macro_use]
+mod debug_log;
+
 #[macro_use]
 mod ui_print;
 
@@ -20,19 +24,21 @@ use std::sync::Mutex;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use ui::UI;
+use debug_log::DEBUG;
+
 
 mod units {
-    #[derive(Clone, Copy)]
+    #[derive(Clone, Copy, Debug)]
     /// A mass, represented as an integer number of grams.
     pub struct Mass(u64);
     /// A specific impulse, represented as an integer number of seconds.
-    #[derive(Clone, Copy)]
+    #[derive(Clone, Copy, Debug)]
     pub struct Isp(u64);
     /// A volume, represented as an integer number of liters.
-    #[derive(Clone, Copy)]
+    #[derive(Clone, Copy, Debug)]
     pub struct Volume(u64);
     /// A preasure, represented as an integer number of pascals.
-    #[derive(Clone, Copy)]
+    #[derive(Clone, Copy, Debug)]
     pub struct Preasure(u64);
 
     impl Mass {
@@ -67,9 +73,12 @@ fn main() {
     ui.start();
 
     for event in stdin.events() {
-        if !ui.input(event.unwrap()) {
+        let event = event.unwrap();
+        if !ui.input(&event) {
             break;
         }
+        DEBUG.on_event(&event);
+        DEBUG.redraw();
     }
 
     ui_print!("foo");
@@ -82,6 +91,7 @@ lazy_static! {
     pub static ref GAME: Game = Game::new();
 }
 
+#[derive(Debug)]
 pub struct Game {
     sats: SatRegistry,
     customers: CustomerRegistry,

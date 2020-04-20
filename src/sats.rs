@@ -5,13 +5,16 @@ use crate::units::*;
 use std::fmt;
 use std::fmt::Display;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct SatId(u32);
 
+
+#[derive(Debug)]
 pub struct SatRegistry {
     sats: Vec<Sat>, //Should this be indexmap?
 }
 
+#[derive(Debug)]
 #[allow(clippy::enum_variant_names)] //Should we change this as clippy suggests? I am torn.
 pub enum Sat {
     CubeSat(CubeSat),
@@ -20,12 +23,15 @@ pub enum Sat {
     Station(Station),
 }
 
+#[derive(Debug)]
 pub struct CubeSat {
     pub class: CubeSatClass,
     pub mass: Mass,
     pub orbit: Orbit,
 }
 
+
+#[derive(Debug)]
 pub enum CubeSatClass {
     CubeSat1U,
     CubeSat2U,
@@ -33,12 +39,15 @@ pub enum CubeSatClass {
     CubeSat6U,
 }
 
+
+#[derive(Debug)]
 pub struct LargeSat {
     pub volume: Volume,
     pub mass: Mass,
     pub orbit: Orbit,
 }
 
+#[derive(Debug)]
 pub struct SatArray {
     pub volume: Volume,
     pub base_mass: Mass,
@@ -46,11 +55,13 @@ pub struct SatArray {
     pub orbits: Vec<Orbit>,
 }
 
+#[derive(Debug)]
 pub struct ArraySat {
     mass: Mass,
     orbit: Orbit,
 }
 
+#[derive(Debug)]
 pub struct Station {
     pub name: String,
     pub orbit: Orbit,

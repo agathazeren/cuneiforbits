@@ -6,6 +6,9 @@ use termion::cursor;
 use termion::event::Event;
 use termion::event::Key;
 
+
+
+
 pub struct UI {
     current_view: Box<dyn FullView>,
     view_stack: Vec<Box<dyn FullView>>,
@@ -15,8 +18,7 @@ pub struct UI {
 pub trait FullView {
     fn full_redraw(&self);
     fn update(&mut self, input: Input) -> Option<Transition>;
-    #[allow(unused_variables)]
-    fn restart(&mut self, last: Box<dyn FullView>) -> Option<Transition> {
+    fn restart(&mut self, _: Box<dyn FullView>) -> Option<Transition> {
         self.full_redraw();
         None
     }
@@ -42,7 +44,7 @@ pub enum Transition {
     Push(Box<dyn FullView>),
     Pop,
     InputMode(InputMode),
-    Multiple(Vec<Transition>),
+    Multiple(Vec<Transition>), //TODO: Perf: Make this a SmallVec
 }
 
 type Continue = bool;
@@ -66,7 +68,7 @@ impl UI {
         self.current_view.full_redraw();
     }
 
-    pub fn input(&mut self, event: Event) -> Continue {
+    pub fn input(&mut self, event: &Event) -> Continue {
         if let Some(input) = self.input_mode.map(event) {
             let trans = self.current_view.update(input);
             self.handle_trans(trans)
@@ -125,7 +127,7 @@ impl Drop for UI {
 }
 
 impl InputMode {
-    fn map(&self, event: Event) -> Option<Input> {
+    fn map(&self, event: &Event) -> Option<Input> {
         match self {
             InputMode::Control => match event {
                 Event::Key(k) => match k {
@@ -149,7 +151,7 @@ impl InputMode {
                 Event::Key(Key::Down) | Event::Key(Key::Ctrl('n')) => Some(Input::Down),
                 Event::Key(Key::Delete) | Event::Key(Key::Ctrl('d')) => Some(Input::Del),
                 Event::Key(Key::Backspace) => Some(Input::BkSpace),
-                Event::Key(Key::Char(c)) => Some(Input::Type(c)),
+                Event::Key(Key::Char(c)) => Some(Input::Type(*c)),
                 Event::Key(Key::Esc) => Some(Input::Back),
                 _ => None,
             },
@@ -595,6 +597,7 @@ mod tick_view {
     use std::io::stdout;
     use std::io::Write;
     use termion::clear;
+    use crate::debug_log::DEBUG;
 
     pub struct View;
 
@@ -608,6 +611,7 @@ mod tick_view {
         }
         fn start(&mut self) -> Option<Transition> {
             GAME.tick();
+            DEBUG.log("Ticked");
             Some(Transition::Pop)
         }
     }
@@ -625,6 +629,7 @@ mod rockets_view {
     use std::io::stdout;
     use std::io::Write;
     use termion::{clear, cursor};
+    use crate::debug_at;
 
     pub struct View {
         sel: Sel,
@@ -713,12 +718,17 @@ mod rockets_view {
                     None
                 }
                 Input::Left | Input::Right => {
-                    self.sel = match self.sel {
-                        Sel::New => Sel::New,
-                        Sel::Rocket(idx) => Sel::RocketEdit(idx),
-                        Sel::RocketEdit(idx) => Sel::Rocket(idx),
+                    match self.sel {
+                        Sel::New => {},
+                        Sel::Rocket(idx) => {
+                            self.sel = Sel::RocketEdit(idx);
+                            self.full_redraw();
+                        }
+                        Sel::RocketEdit(idx) => {
+                            self.sel = Sel::Rocket(idx);
+                            self.full_redraw();
+                        }
                     };
-                    self.full_redraw();
                     None
                 }
                 Input::Select => match self.sel {

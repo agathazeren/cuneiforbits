@@ -5,7 +5,7 @@ use std::fmt;
 
 pub type Crewed = bool;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum PropellantType {
     Hyrdolox,
     Methalox,
@@ -13,21 +13,21 @@ pub enum PropellantType {
     Hypergolic,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Fuel {
     Hydrogen,
     Methane,
     RP1,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum CryoClass {
     STP,
     Cryo,
     SuperCryo,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum ComponentClass {
     Engine(PropellantType, Isp),
     Tank(CryoClass, Preasure),
@@ -35,7 +35,7 @@ pub enum ComponentClass {
     Capsule(Crewed, Volume, Volume),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Component {
     pub name: String,
     pub display: String,
@@ -43,7 +43,7 @@ pub struct Component {
     pub class: ComponentClass,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Rocket {
     pub name: String,
     pub components: Vec<Component>,

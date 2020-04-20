@@ -15,11 +15,14 @@ use std::sync::atomic::AtomicU8;
 use std::sync::atomic::Ordering;
 use std::sync::Mutex;
 
+#[derive(Debug)]
 pub struct Job {
     pub customer: CustomerId,
     pub payload: Payload,
 }
 
+
+#[derive(Debug)]
 pub enum Payload {
     CubeSat(CubeSat),
     LargeSat(LargeSat),
@@ -27,19 +30,22 @@ pub enum Payload {
     Station(SatId, Cargo),
 }
 
+#[derive(Debug)]
 pub struct Cargo {
     volume: Volume,
     mass: Mass,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct CustomerId(u32);
 
+#[derive(Debug)]
 pub struct CustomerRegistry {
     customers: Mutex<Vec<Customer>>,
     target_customers: AtomicU8,
 }
 
+#[derive(Debug)]
 pub struct Customer {
     pub name: String,
 }
