@@ -239,7 +239,8 @@ pub mod type_box {
         pub fn draw(&self) {
             use termion::color;
             if self.active {
-                print!("{}{}", color::Fg(color::Black), color::Bg(color::White)); //TODO chance this to invert
+                print!("{}{}", color::Fg(color::Black), color::Bg(color::White));
+                //TODO chance this to invert
             }
             print!(
                 "{}{}{}",
