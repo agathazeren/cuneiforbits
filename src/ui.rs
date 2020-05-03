@@ -195,7 +195,7 @@ pub mod type_box {
             }
             match input {
                 Input::Type(c) if *c != '\n' => {
-                    if self.cursor < self.len {
+                    if self.content.len() < self.len.into() {
                         self.content.insert(self.cursor as usize, *c);
                         self.cursor += 1;
                     } // TODO: allow horizontal scrolling to enable longer content
@@ -239,7 +239,7 @@ pub mod type_box {
         pub fn draw(&self) {
             use termion::color;
             if self.active {
-                print!("{}{}", color::Fg(color::Black), color::Bg(color::White));
+                print!("{}{}", color::Fg(color::Black), color::Bg(color::White)); //TODO chance this to invert
             }
             print!(
                 "{}{}{}",
@@ -315,7 +315,7 @@ mod basic_tl_view {
             for (idx, tab) in self.tabs.iter().enumerate() {
                 print!("{}", cursor::Goto(1, 2 + idx as u16));
                 if idx as u8 == self.selection {
-                    ui_print!("▶");
+                    ui_print!("▶ "); //TODO this is a hack because I need to expand cuneiform_width into font_width
                 } else {
                     ui_print!("{}", cursor::Right(2));
                 }
