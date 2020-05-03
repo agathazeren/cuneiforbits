@@ -414,7 +414,11 @@ mod unimplemented_view {
 
     impl FullView for View {
         fn full_redraw(&self) {
-            ui_print!("{}{}Unimplemended View. 𒀿|", clear::All, cursor::Goto(1, 1));
+            ui_print!(
+                "n{}{}Unimplemended View. 𒀿|",
+                clear::All,
+                cursor::Goto(1, 1)
+            );
             eprint!("STDERR");
             stdout().flush().unwrap();
         }
@@ -472,9 +476,9 @@ mod jobs_view {
                 );
                 print!("{}{}", cursor::Goto(5, row + 1), job.payload);
                 print!(
-                    "{}✓{}X",
+                    "{}✔{}X",
                     cursor::Goto(3 + MAX_CUSTOMER_NAME_LEN + 2, row),
-                    cursor::Right(3)
+                    cursor::Right(4)
                 );
             }
             self.no_jobs.set(jobs.len() == 0);
@@ -487,7 +491,7 @@ mod jobs_view {
                 };
                 let symbol = match self.horiz_sel {
                     Name => "▶".to_string(),
-                    Accept | Decline => format!("[{}]", cursor::Right(1)),
+                    Accept | Decline => format!("[{}]", cursor::Right(2)),
                 };
                 print!(
                     "{}{}",
