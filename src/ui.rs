@@ -41,7 +41,7 @@ pub enum Transition {
     Push(Box<dyn FullView>),
     Pop,
     InputMode(InputMode),
-    Multiple(Vec<Transition>), //TODO: Perf: Make this a SmallVec
+    Multiple(Vec<Transition>),
 }
 
 type Continue = bool;
@@ -128,7 +128,6 @@ impl InputMode {
         match self {
             InputMode::Control => match event {
                 Event::Key(k) => match k {
-                    //TODO unnest this match
                     Key::Left | Key::Char('a') => Some(Input::Left),
                     Key::Right | Key::Char('d') => Some(Input::Right),
                     Key::Up | Key::Char('w') => Some(Input::Up),
@@ -171,12 +170,15 @@ pub mod type_box {
     pub struct TypeBox {
         pub content: String,
         cursor: u8,
+        left_scroll: u8,
         len: u8,
         loc_x: u16,
         loc_y: u16,
         active: bool,
     }
+
     type ShouldRedraw = bool;
+
     impl TypeBox {
         pub fn activate(&mut self, activate: bool) {
             if self.active && !activate {
@@ -195,10 +197,13 @@ pub mod type_box {
             }
             match input {
                 Input::Type(c) if *c != '\n' => {
-                    if self.content.len() < self.len.into() {
-                        self.content.insert(self.cursor as usize, *c);
+                    if self.cursor == self.len {
+                        self.left_scroll += 1;
+                    } else {
                         self.cursor += 1;
-                    } // TODO: allow horizontal scrolling to enable longer content
+                    }
+                    self.content
+                        .insert((self.cursor + self.left_scroll) as usize, *c);
                     true
                 }
                 Input::Left => {
@@ -237,10 +242,9 @@ pub mod type_box {
         }
 
         pub fn draw(&self) {
-            use termion::color;
+            use termion::style;
             if self.active {
-                print!("{}{}", color::Fg(color::Black), color::Bg(color::White));
-                //TODO chance this to invert
+                print!("{}", style::Invert);
             }
             print!(
                 "{}{}{}",
@@ -333,7 +337,7 @@ mod basic_tl_view {
                     } else {
                         self.selection -= 1;
                     }
-                    self.full_redraw(); //TODO optimize all of these to only change what is neccecary
+                    self.full_redraw();
                     None
                 }
                 Input::Down => {
@@ -831,14 +835,12 @@ mod rocket_builder_view {
 
             print!("{}", cursor::Goto(2, 4));
 
-            const COMPONENT_WIDTH: u16 = Component::MAX_WIDTH + 1; //TODO: get rid of this
-
             for component in &self.rocket.components {
                 let symbol = format!("{}", component);
                 print!(
                     "{}{}",
                     symbol,
-                    cursor::Right(COMPONENT_WIDTH - symbol.len() as u16)
+                    cursor::Right(Component::MAX_WIDTH + 1 - symbol.len() as u16)
                 ); //this one really should be print, not ui_print
             }
 
@@ -863,7 +865,7 @@ mod rocket_builder_view {
                     print!(
                         "{}^",
                         cursor::Goto(
-                            1 + (COMPONENT_WIDTH) * (idx as u16) + Component::MAX_WIDTH / 2,
+                            1 + (Component::MAX_WIDTH + 1) * (idx as u16) + Component::MAX_WIDTH / 2,
                             5
                         )
                     );
